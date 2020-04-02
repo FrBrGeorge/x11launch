@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <argp.h>
 #include <X11/Xlib.h>
+#include <string.h>
 
 const char *argp_program_version =
   "x11launch 0.1";
@@ -31,18 +32,15 @@ static struct argp_option options[] = {
   { 0 }
 };
 
-/* Used by main to communicate with parse_opt. */
-struct arguments
-{
-  int verbose, border, dump;
-  float shift;
-  char *config, *ink, *paper, *Ink, *Paper, *font, *geometry;
-};
-
 struct tab {
   char *label;
   char *cmd;
-  int x, y, dx, dy, width, height, group;
+  int x, y, dx, dy, width, height;
+  int group;
+  int immediate;
+  float shift;
+  XColor ink, paper, Ink, Paper;
+  XFontStruct *font;
   Window win;
 };
 
@@ -50,11 +48,22 @@ struct tabgroups {
   struct tab *tabs;
   int ntabs;
   int ngroups;
-} groups = {NULL, 0, 1};
+  XFontStruct *font;
+  XColor ink, paper, Ink, Paper;
+};
+
+/* Used by main to communicate with parse_opt. */
+struct arguments
+{
+  int verbose, border, dump;
+  float shift;
+  char *config, *ink, *paper, *Ink, *Paper, *font, *geometry;
+  struct tabgroups *grp;
+};
 
 /* Initial values of arguments */
 static void
-default_adguments (struct arguments *args) {
+default_adguments (struct arguments *args, struct tabgroups *grp) {
   args->verbose = 0;
   args->dump = 0;
   args->shift = 3.;
@@ -65,13 +74,17 @@ default_adguments (struct arguments *args) {
   args->Ink = "white";
   args->Paper = "grey50";
   args->font = "fixed";
-  args->geometry = NULL;
+  args->geometry = "";
+  args->grp = grp;
 }
 
 
 /* TODO dump actual arguments */
 static void
 dump_arguments(struct arguments *args) {
+  int i;
+  struct tab *T = args->grp->tabs;
+
   printf("verbose: %d\n", args->verbose);
   printf("shift: %f\n", args->shift);
   printf("border: %d\n", args->border);
@@ -82,6 +95,36 @@ dump_arguments(struct arguments *args) {
   printf("Paper: %s\n", args->Paper);
   printf("font: %s\n", args->font);
   printf("geometry: %s\n", args->geometry);
+  printf("\tMenu:\n");
+  for(i=0; i<args->grp->ntabs; i++) {
+    printf("Label: %s | Command: %s\n", T[i].label, T[i].cmd);
+    printf("\tGroup: %d\n", T[i].group);
+    printf("\tShift: %f\n", T[i].shift);
+    printf("\tImmediate: %d\n", T[i].immediate);
+  }
+}
+
+
+void
+new_tab(struct arguments *args, char *labelcmd) {
+      struct tab *T = args->grp->tabs + args->grp->ntabs;
+      char *sep;
+
+      args->grp->ntabs++;
+      /* parse label, cmd and immediate; TODO deal with \| */
+      if((sep = strchr(labelcmd, '|')) && labelcmd[1]) {
+	T->label = strndup(labelcmd, sep-labelcmd);
+	if((T->immediate = (sep == strstr(labelcmd, "||"))))
+	  T->cmd = strdup(sep+2);
+	else
+	  T->cmd = strdup(sep+1);
+      } else {
+	T->label = strdup(labelcmd);
+	T->cmd = NULL;
+	T->immediate = 0;
+      }
+      T->group = args->grp->ngroups-1;
+      T->shift = args->shift;
 }
 
 /* Parse a single option. */
@@ -128,18 +171,13 @@ parse_opt (int key, char *arg, struct argp_state *state)
       args->shift = atof(arg);
       break;
     case ARGP_KEY_ARG:
-      /*G*//*TODO*/
-      printf("Menu: %s\n", arg);
+      new_tab(args, arg);
       break;
 
     default:
       return ARGP_ERR_UNKNOWN;
     }
   return 0;
-}
-
-void
-new_tab(struct tabgroups *grp) {
 }
 
 /* Our argp parser. */
@@ -149,12 +187,13 @@ int
 main (int argc, char **argv)
 {
   struct arguments arguments;
+  struct tabgroups groups = {NULL, 0, 1};
 
   /* TODO: this is overprovisioning */
   groups.tabs = calloc(argc, sizeof(struct tab));
 
   /* Default values. */
-  default_adguments(&arguments);
+  default_adguments(&arguments, &groups);
 
   /* Parse our arguments; every option seen by parse_opt will
      be reflected in arguments. */
