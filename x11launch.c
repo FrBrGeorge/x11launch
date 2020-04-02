@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <argp.h>
+#include <X11/Xlib.h>
 
 const char *argp_program_version =
   "x11launch 0.1";
@@ -37,6 +38,19 @@ struct arguments
   float shift;
   char *config, *ink, *paper, *Ink, *Paper, *font, *geometry;
 };
+
+struct tab {
+  char *label;
+  char *cmd;
+  int x, y, dx, dy, width, height, group;
+  Window win;
+};
+
+struct tabgroups {
+  struct tab *tabs;
+  int ntabs;
+  int ngroups;
+} groups = {NULL, 0, 1};
 
 /* Initial values of arguments */
 static void
@@ -124,6 +138,10 @@ parse_opt (int key, char *arg, struct argp_state *state)
   return 0;
 }
 
+void
+new_tab(struct tabgroups *grp) {
+}
+
 /* Our argp parser. */
 static struct argp argp = { options, parse_opt, args_doc, doc };
 
@@ -131,6 +149,9 @@ int
 main (int argc, char **argv)
 {
   struct arguments arguments;
+
+  /* TODO: this is overprovisioning */
+  groups.tabs = calloc(argc, sizeof(struct tab));
 
   /* Default values. */
   default_adguments(&arguments);
