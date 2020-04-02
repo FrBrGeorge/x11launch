@@ -8,10 +8,11 @@ const char *argp_program_bug_address =
 
 /* Program documentation. */
 static char doc[] =
-  " x11launch -- a simple X11 menu launcher";
+  "The x11launch tool is a simple X11 menu launcher that occupies one pixel area on creen edge and shows leveled menu when pointed by mouse. It executes an application by mouse click or just hover on corresponded menu item.\vTODO\n\n"
+  "more detail description";
 
 /* A description of the arguments we accept. */
-static char args_doc[] = "label|[|]command [ label|[|]command ...]";
+static char args_doc[] = "label|command ...\nlabel||command ...";
 
 /* The options we understand. */
 static struct argp_option options[] = {
