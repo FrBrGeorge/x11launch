@@ -9,7 +9,7 @@ const char *argp_program_bug_address =
 /* Program documentation. */
 static char doc[] =
   "The x11launch tool is a simple X11 menu launcher that occupies one pixel area on creen edge and shows leveled menu when pointed by mouse. It executes an application by mouse click or just hover on corresponded menu item.\vTODO\n\n"
-  "more detail description";
+  "more detail description and example";
 
 /* A description of the arguments we accept. */
 static char args_doc[] = "label|command ...\nlabel||command ...";
@@ -40,34 +40,34 @@ struct arguments
 
 /* Initial values of arguments */
 static void
-default_adguments (struct arguments *arguments) {
-  arguments->verbose = 0;
-  arguments->dump = 0;
-  arguments->shift = 3.;
-  arguments->border = 3;
-  arguments->config = NULL;
-  arguments->ink = "black";
-  arguments->paper = "grey75";
-  arguments->Ink = "white";
-  arguments->Paper = "grey50";
-  arguments->font = "fixed";
-  arguments->geometry = NULL;
+default_adguments (struct arguments *args) {
+  args->verbose = 0;
+  args->dump = 0;
+  args->shift = 3.;
+  args->border = 3;
+  args->config = NULL;
+  args->ink = "black";
+  args->paper = "grey75";
+  args->Ink = "white";
+  args->Paper = "grey50";
+  args->font = "fixed";
+  args->geometry = NULL;
 }
 
 
 /* TODO dump actual arguments */
 static void
-dump_arguments(struct arguments *arguments) {
-  printf("verbose: %d\n", arguments->verbose);
-  printf("shift: %f\n", arguments->shift);
-  printf("border: %d\n", arguments->border);
-  printf("config: %s\n", arguments->config);
-  printf("ink: %s\n", arguments->ink);
-  printf("paper: %s\n", arguments->paper);
-  printf("Ink: %s\n", arguments->Ink);
-  printf("Paper: %s\n", arguments->Paper);
-  printf("font: %s\n", arguments->font);
-  printf("geometry: %s\n", arguments->geometry);
+dump_arguments(struct arguments *args) {
+  printf("verbose: %d\n", args->verbose);
+  printf("shift: %f\n", args->shift);
+  printf("border: %d\n", args->border);
+  printf("config: %s\n", args->config);
+  printf("ink: %s\n", args->ink);
+  printf("paper: %s\n", args->paper);
+  printf("Ink: %s\n", args->Ink);
+  printf("Paper: %s\n", args->Paper);
+  printf("font: %s\n", args->font);
+  printf("geometry: %s\n", args->geometry);
 }
 
 /* Parse a single option. */
@@ -76,42 +76,42 @@ parse_opt (int key, char *arg, struct argp_state *state)
 {
   /* Get the input argument from argp_parse, which we
      know is a pointer to our arguments structure. */
-  struct arguments *arguments = state->input;
+  struct arguments *args = state->input;
 
   switch (key)
     {
     case 'v':
-      arguments->verbose = 1;
+      args->verbose = 1;
       break;
     case 'd':
-      arguments->dump = 1;
+      args->dump = 1;
       break;
     case 'c':
-      arguments->config = arg;
+      args->config = arg;
       break;
     case 'i':
-      arguments->ink = arg;
+      args->ink = arg;
       break;
     case 'p':
-      arguments->paper = arg;
+      args->paper = arg;
       break;
     case 'I':
-      arguments->Ink = arg;
+      args->Ink = arg;
       break;
     case 'P':
-      arguments->Paper = arg;
+      args->Paper = arg;
       break;
     case 'f':
-      arguments->font = arg;
+      args->font = arg;
       break;
     case 'g':
-      arguments->geometry = arg;
+      args->geometry = arg;
       break;
     case 'b':
-      arguments->border = atoi(arg);
+      args->border = atoi(arg);
       break;
     case 's':
-      arguments->shift = atof(arg);
+      args->shift = atof(arg);
       break;
     case ARGP_KEY_ARG:
       /*G*//*TODO*/
