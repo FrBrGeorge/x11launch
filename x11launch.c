@@ -37,21 +37,24 @@ static struct argp_option options[] = {
 struct tab {
   char *label;
   char *cmd;
+  char *sfont, *sink, *spaper, *sInk, *sPaper;
   int x, y, dx, dy;
   int group;
   int immediate;
   float shift;
-  XColor ink, paper, Ink, Paper;
+  XColor *ink, *paper, *Ink, *Paper;
   XFontStruct *font;
   Window win;
 };
 
+/* global namespace */
 struct tabgroups {
   struct tab *tabs;
   int ntabs;
   int ngroups;
-  XFontStruct *font;
-  XColor ink, paper, Ink, Paper;
+  Display *dpy;
+  Window root;
+  int screen;
 };
 
 /* Used by main to communicate with parse_opt.  */
@@ -104,6 +107,8 @@ dump_arguments(struct arguments *args) {
     printf("\tShift: %f\n", T[i].shift);
     printf("\tImmediate: %d\n", T[i].immediate);
     printf("\tLocation: %dx%d%+d%+d\n", T[i].dx, T[i].dy, T[i].x, T[i].y);
+    printf("\tFont: %s\n", T[i].sfont);
+    printf("\tInk: %s/%s, paper: %s/%s\n", T[i].sink, T[i].sInk, T[i].spaper, T[i].sPaper);
   }
 }
 
@@ -134,6 +139,9 @@ new_tab(struct arguments *args, char *labelcmd) {
 	error(EINVAL, EINVAL, "Invalid geometry '%s'", args->geometry);
       T->dx = XNegative&res? -w : w;
       T->dy = YNegative&res? -h : h;
+      T->sfont = args->font;
+      T->sink = args->ink; T->spaper = args->paper;
+      T->sInk = args->Ink; T->sPaper = args->Paper;
 }
 
 /* Parse a single option. */
@@ -193,11 +201,37 @@ parse_opt (int key, char *arg, struct argp_state *state)
 /* Our argp parser. */
 static struct argp argp = { options, parse_opt, args_doc, doc };
 
+
+#define NewRes(res, tres, obj, tobj, create, errmsg) \
+  if(res!=tres) { \
+    res = tres; \
+    if(!(obj = create)) \
+      error(EINVAL, EINVAL, errmsg, res); \
+    tobj = obj; \
+  }
+
+void create_windows(struct tabgroups *grp) {
+  int i;
+  int g=-1;
+  struct tab *T;
+  char *sfont=NULL, *sink=NULL, *spaper=NULL, *sInk=NULL, *sPaper=NULL;
+  XColor *ink, *paper, *Ink, *Paper;
+  XFontStruct *font;
+  Window win;
+
+  /* TODO non-LTR window packing, deal with dx/dy */
+  for(i=0; i<grp->ntabs; i++) {
+    T = grp->tabs+i;
+    NewRes(sfont, T->sfont, font, T->font,
+	XLoadQueryFont(grp->dpy, sfont), "Cannot register font %s");
+  }
+}
+
 int
 main (int argc, char **argv)
 {
   struct arguments arguments;
-  struct tabgroups groups = {NULL, 0, 1};
+  struct tabgroups groups = {NULL, 0, 1, NULL};
 
   /* TODO: this is overprovisioning */
   groups.tabs = calloc(argc, sizeof(struct tab));
@@ -209,6 +243,14 @@ main (int argc, char **argv)
      be reflected in arguments. */
   argp_parse (&argp, argc, argv, ARGP_IN_ORDER, 0, &arguments);
   if(arguments.dump) dump_arguments(&arguments);
+
+  if(!(groups.dpy = XOpenDisplay(NULL)))
+    error(ECONNREFUSED, ECONNREFUSED, "Cannot connect to X server");
+      
+  groups.screen = DefaultScreen(groups.dpy);
+  groups.root = RootWindow(groups.dpy, groups.screen);
+
+  create_windows(&groups);
 
   exit (0);
 }

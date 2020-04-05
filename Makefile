@@ -1,4 +1,4 @@
-CFLAGS=-O0 -ggdb -Wall
+CFLAGS=-O0 -ggdb -Wall -Wno-unused
 LDLIBS=-lX11
 GENERATED=x11launch GeomTest x11launch.1 *.o
 JUNK=*~ *.bak
