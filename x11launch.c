@@ -1,7 +1,9 @@
 #include <stdlib.h>
 #include <argp.h>
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #include <string.h>
+#include <error.h>
 
 const char *argp_program_version =
   "x11launch 0.1";
@@ -35,7 +37,7 @@ static struct argp_option options[] = {
 struct tab {
   char *label;
   char *cmd;
-  int x, y, dx, dy, width, height;
+  int x, y, dx, dy;
   int group;
   int immediate;
   float shift;
@@ -52,7 +54,7 @@ struct tabgroups {
   XColor ink, paper, Ink, Paper;
 };
 
-/* Used by main to communicate with parse_opt. */
+/* Used by main to communicate with parse_opt.  */
 struct arguments
 {
   int verbose, border, dump;
@@ -74,7 +76,7 @@ default_adguments (struct arguments *args, struct tabgroups *grp) {
   args->Ink = "white";
   args->Paper = "grey50";
   args->font = "fixed";
-  args->geometry = "";
+  args->geometry = "1x0+0+0"; /* TODO: center is better */
   args->grp = grp;
 }
 
@@ -101,6 +103,7 @@ dump_arguments(struct arguments *args) {
     printf("\tGroup: %d\n", T[i].group);
     printf("\tShift: %f\n", T[i].shift);
     printf("\tImmediate: %d\n", T[i].immediate);
+    printf("\tLocation: %dx%d%+d%+d\n", T[i].dx, T[i].dy, T[i].x, T[i].y);
   }
 }
 
@@ -109,6 +112,7 @@ void
 new_tab(struct arguments *args, char *labelcmd) {
       struct tab *T = args->grp->tabs + args->grp->ntabs;
       char *sep;
+      unsigned int res, w, h;
 
       args->grp->ntabs++;
       /* parse label, cmd and immediate; TODO deal with \| */
@@ -125,6 +129,11 @@ new_tab(struct arguments *args, char *labelcmd) {
       }
       T->group = args->grp->ngroups-1;
       T->shift = args->shift;
+      res = XParseGeometry(args->geometry, &T->x, &T->y, &w, &h);
+      if(!res && strlen(args->geometry)>0)
+	error(EINVAL, EINVAL, "Invalid geometry '%s'", args->geometry);
+      T->dx = XNegative&res? -w : w;
+      T->dy = YNegative&res? -h : h;
 }
 
 /* Parse a single option. */
@@ -163,6 +172,7 @@ parse_opt (int key, char *arg, struct argp_state *state)
       break;
     case 'g':
       args->geometry = arg;
+      args->grp->ngroups++;
       break;
     case 'b':
       args->border = atoi(arg);

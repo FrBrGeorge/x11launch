@@ -1,6 +1,6 @@
 CFLAGS=-O0 -ggdb -Wall
 LDLIBS=-lX11
-GENERATED=x11launch x11launch.1 *.o
+GENERATED=x11launch GeomTest x11launch.1 *.o
 JUNK=*~ *.bak
 
 %.1:	%
@@ -9,7 +9,7 @@ JUNK=*~ *.bak
 all:	x11launch x11launch.1 test
 
 test:
-	./x11launch 'click|cmdclick' -v 'immediate||cmdimmed' -b 5 'SEP' -p blue -i khaki '||immed no label' 'next is pipline separator|just command' '|' 'that WAS pipleine||another imediate' -d
+	./x11launch 'click|cmdclick' -v 'immediate||cmdimmed' -b 5 'SEP' -p blue -i khaki '||immed no label' -g 1x0-0+0 'next is pipline separator|just command' '|' 'that WAS pipleine||another imediate' -d
 
 clean:
 	rm -f $(JUNK) $(GENERATED)
