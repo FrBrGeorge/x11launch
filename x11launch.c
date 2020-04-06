@@ -38,12 +38,13 @@ struct tab {
   char *label;
   char *cmd;
   char *sfont, *sink, *spaper, *sInk, *sPaper;
-  int x, y, dx, dy;
+  int x, y, w, h, dx, dy, b;
   int group;
   int immediate;
   float shift;
   XColor *ink, *paper, *Ink, *Paper;
   XFontStruct *font;
+  GC gc, Gc;
   Window win;
 };
 
@@ -139,6 +140,7 @@ new_tab(struct arguments *args, char *labelcmd) {
 	error(EINVAL, EINVAL, "Invalid geometry '%s'", args->geometry);
       T->dx = XNegative&res? -w : w;
       T->dy = YNegative&res? -h : h;
+      T->b = args->border;
       T->sfont = args->font;
       T->sink = args->ink; T->spaper = args->paper;
       T->sInk = args->Ink; T->sPaper = args->Paper;
@@ -201,18 +203,44 @@ parse_opt (int key, char *arg, struct argp_state *state)
 /* Our argp parser. */
 static struct argp argp = { options, parse_opt, args_doc, doc };
 
+XColor *new_color(struct tabgroups *grp, char *name) {
+  XColor *cols = calloc(2, sizeof(XColor));
+  if(!XAllocNamedColor(grp->dpy, DefaultColormap(grp->dpy, grp->screen),
+      			  name, cols, cols+1))
+    error(EINVAL, EINVAL, "Cannot register coior '%s'", name);
+  return cols;
+}
 
-#define NewRes(res, tres, obj, tobj, create, errmsg) \
-  if(res!=tres) { \
-    res = tres; \
-    if(!(obj = create)) \
-      error(EINVAL, EINVAL, errmsg, res); \
-    tobj = obj; \
-  }
+GC new_gc(struct tabgroups *grp, Font fid, unsigned long paper, unsigned long ink) {
+  XGCValues gv;
+  gv.font = fid;
+  gv.foreground = ink;
+  gv.background = paper;
+  gv.function = GXcopy;
+  GC gc;
+  if(!(gc = XCreateGC(grp->dpy, grp->root, GCFunction | GCForeground | GCBackground | GCFont, &gv)))
+    error(EINVAL, EINVAL, "Cannot create GC");
+  return gc;
+
+}
+
+Window new_window(struct tabgroups *grp, struct tab *T) {
+  XSetWindowAttributes attrib;
+  Window win;
+
+  attrib.override_redirect = True;
+  attrib.background_pixel = T->paper->pixel;
+  if(!(win = XCreateWindow(grp->dpy, grp->root, T->x, T->y, T->w, T->h, T->b,
+	  CopyFromParent, InputOutput, CopyFromParent,
+	  CWOverrideRedirect | CWBackPixel, &attrib)))
+    error(EINVAL, EINVAL, "Cannot create menu item window");
+  return win;
+
+}
+
 
 void create_windows(struct tabgroups *grp) {
-  int i;
-  int g=-1;
+  int i, w, h;
   struct tab *T;
   char *sfont=NULL, *sink=NULL, *spaper=NULL, *sInk=NULL, *sPaper=NULL;
   XColor *ink, *paper, *Ink, *Paper;
@@ -222,8 +250,20 @@ void create_windows(struct tabgroups *grp) {
   /* TODO non-LTR window packing, deal with dx/dy */
   for(i=0; i<grp->ntabs; i++) {
     T = grp->tabs+i;
-    NewRes(sfont, T->sfont, font, T->font,
-	XLoadQueryFont(grp->dpy, sfont), "Cannot register font %s");
+    if(sfont != T->sfont)
+      if(!(font = XLoadQueryFont(grp->dpy, sfont=T->sfont)))
+	error(EINVAL, EINVAL, "Cannot register font '%s'", sfont);
+    if(sink != T->sink) ink = new_color(grp, sink=T->sink);
+    if(sInk != T->sInk) Ink = new_color(grp, sInk=T->sInk);
+    if(spaper != T->spaper) paper = new_color(grp, spaper=T->spaper);
+    if(sPaper != T->sPaper) Paper = new_color(grp, sPaper=T->sPaper);
+    T->font=font; T->ink=ink; T->Ink=sInk; T->paper=paper; T->Paper=Paper;
+    T->gc = new_gc(grp, font->fid, paper->pixel, ink->pixel);
+    T->Gc = new_gc(grp, font->fid, Paper->pixel, Ink->pixel);
+    T->w = XTextWidth(font, T->label, strlen(T->label)) + 2*T->b;
+    T->h = font->ascent + font->descent + 2*T->b;
+    T->win = new_window(grp, T);
+
   }
 }
 
