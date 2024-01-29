@@ -9,7 +9,10 @@ JUNK=*~ *.bak
 all:	x11launch x11launch.1 test
 
 test:
-	./x11launch 'click|cmdclick' -v 'immediate||cmdimmed' -b 5 'SEP' -p blue -i khaki '||immed no label' -g 1x0-0+0 'next is pipline separator|just command' '|' 'that WAS pipleine||another imediate' -d || :
+	./x11launch 'click|cmdclick' -v 'immediate||cmdimmed' -b 5 'SEP' -p blue -i khaki '||immed no label' -g 1x0-0+0 'next is pipline separator|just command' '|' 'that WAS pipleine||another imediate' -dD || :
+
+testrun: x11launch
+	./x11launch 'Date|date'
 
 clean:
 	rm -f $(JUNK) $(GENERATED)

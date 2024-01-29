@@ -6,6 +6,8 @@
 #include <error.h>
 #include <stddef.h>
 
+#define EVENTMASKS EnterWindowMask | LeaveWindowMask | ButtonPressMask | ButtonReleaseMask | ExposureMask
+
 const char *argp_program_version =
   "x11launch 0.1";
 const char *argp_program_bug_address =
@@ -269,7 +271,8 @@ void create_windows(struct tabgroups *grp) {
     T->w = XTextWidth(font, T->label, strlen(T->label)) + 2*T->b;
     T->h = font->ascent + font->descent + 2*T->b;
     T->win = new_window(grp, T);
-
+    XMapWindow(grp->dpy, T->win);
+    XSelectInput(grp->dpy, T->win, EVENTMASKS);
   }
 }
 
@@ -303,6 +306,13 @@ main (int argc, char **argv)
   XEvent event;
   while (1) {
     XNextEvent(groups.dpy, &event);
+    printf("#\n");
+    switch (event.type) {
+      case EnterNotify:
+        printf("Enter: %lx\n", event.xcrossing.window); break;
+      case Expose:
+        printf("Expose: %lx\n", event.xexpose.window); break;
+    }
   }
 
   exit (0);
