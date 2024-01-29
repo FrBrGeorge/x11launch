@@ -1,6 +1,9 @@
 # Vim
 .*.sw?
 
+# CCLS
+.ccls-cache
+
 # Prerequisites
 *.d
 

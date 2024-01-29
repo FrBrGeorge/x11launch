@@ -4,6 +4,7 @@
 #include <X11/Xutil.h>
 #include <string.h>
 #include <error.h>
+#include <stddef.h>
 
 const char *argp_program_version =
   "x11launch 0.1";
@@ -240,12 +241,12 @@ Window new_window(struct tabgroups *grp, struct tab *T) {
 
 
 void create_windows(struct tabgroups *grp) {
-  int i, w, h;
+  int i/*, w, h*/;
   struct tab *T;
   char *sfont=NULL, *sink=NULL, *spaper=NULL, *sInk=NULL, *sPaper=NULL;
   XColor *ink, *paper, *Ink, *Paper;
   XFontStruct *font;
-  Window win;
+  // Window win;
 
   /* TODO non-LTR window packing, deal with dx/dy */
   for(i=0; i<grp->ntabs; i++) {
@@ -257,7 +258,7 @@ void create_windows(struct tabgroups *grp) {
     if(sInk != T->sInk) Ink = new_color(grp, sInk=T->sInk);
     if(spaper != T->spaper) paper = new_color(grp, spaper=T->spaper);
     if(sPaper != T->sPaper) Paper = new_color(grp, sPaper=T->sPaper);
-    T->font=font; T->ink=ink; T->Ink=sInk; T->paper=paper; T->Paper=Paper;
+    T->font=font; T->ink=ink; T->Ink=Ink; T->paper=paper; T->Paper=Paper;
     T->gc = new_gc(grp, font->fid, paper->pixel, ink->pixel);
     T->Gc = new_gc(grp, font->fid, Paper->pixel, Ink->pixel);
     T->w = XTextWidth(font, T->label, strlen(T->label)) + 2*T->b;
