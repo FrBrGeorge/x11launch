@@ -24,6 +24,7 @@ static struct argp_option options[] = {
   {"verbose",	'v', NULL,	0, "Produce verbose output" },
   {"config",	'c', "FILE",	0, "Read confioguretion from FILE" },
   {"dump",	'd', NULL,	0, "Dump actual parameters in config file format" },
+  {"dry-run",	'D', NULL,	0, "Do not actually run, just parse parameters" },
   {"shift",	's', "NUMBER",	0, "Inactive menus shift step" },
   {"border",	'b', "NUMBER",	0, "Border width" },
   {"font",	'f', "FONT",	0, "Menu font"},
@@ -62,7 +63,7 @@ struct tabgroups {
 /* Used by main to communicate with parse_opt.  */
 struct arguments
 {
-  int verbose, border, dump;
+  int verbose, border, dump, dry_run;
   float shift;
   char *config, *ink, *paper, *Ink, *Paper, *font, *geometry;
   struct tabgroups *grp;
@@ -73,6 +74,7 @@ static void
 default_adguments (struct arguments *args, struct tabgroups *grp) {
   args->verbose = 0;
   args->dump = 0;
+  args->dry_run = 0;
   args->shift = 3.;
   args->border = 3;
   args->config = NULL;
@@ -162,6 +164,9 @@ parse_opt (int key, char *arg, struct argp_state *state)
       break;
     case 'd':
       args->dump = 1;
+      break;
+    case 'D':
+      args->dry_run = 1;
       break;
     case 'c':
       args->config = arg;
@@ -284,6 +289,7 @@ main (int argc, char **argv)
      be reflected in arguments. */
   argp_parse (&argp, argc, argv, ARGP_IN_ORDER, 0, &arguments);
   if(arguments.dump) dump_arguments(&arguments);
+  if(arguments.dry_run) exit(0);
 
   if(!(groups.dpy = XOpenDisplay(NULL)))
     error(ECONNREFUSED, ECONNREFUSED, "Cannot connect to X server");
@@ -292,6 +298,12 @@ main (int argc, char **argv)
   groups.root = RootWindow(groups.dpy, groups.screen);
 
   create_windows(&groups);
+  
+  /* TODO separate function */
+  XEvent event;
+  while (1) {
+    XNextEvent(groups.dpy, &event);
+  }
 
   exit (0);
 }
