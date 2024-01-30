@@ -82,8 +82,8 @@ default_adguments (struct arguments *args, struct tabgroups *grp) {
   args->config = NULL;
   args->ink = "black";
   args->paper = "grey75";
-  args->Ink = "white";
-  args->Paper = "grey50";
+  args->Ink = "white";          /* Selected ink */
+  args->Paper = "grey50";       /* Selected Paper */
   args->font = "fixed";
   args->geometry = "1x0+0+0"; /* TODO: center is better */
   args->grp = grp;
@@ -253,6 +253,9 @@ Window new_window(struct tabgroups *grp, struct tab *T) {
 
 }
 
+int redraw_window(struct tabgroups *grp, struct tab *T, int active) {
+  return XDrawString(grp->dpy, T->win, active? T->Gc : T->gc, T->b, T->h-T->b-T->font->descent, T->label, strlen(T->label));
+}
 
 void create_windows(struct tabgroups *grp) {
   int i/*, w, h*/;
@@ -260,7 +263,6 @@ void create_windows(struct tabgroups *grp) {
   char *sfont=NULL, *sink=NULL, *spaper=NULL, *sInk=NULL, *sPaper=NULL;
   XColor *ink, *paper, *Ink, *Paper;
   XFontStruct *font;
-  // Window win;
 
   /* TODO non-LTR window packing, deal with dx/dy */
   for(i=0; i<grp->ntabs; i++) {
@@ -279,6 +281,7 @@ void create_windows(struct tabgroups *grp) {
     T->h = font->ascent + font->descent + 2*T->b;
     T->win = new_window(grp, T);
     XMapWindow(grp->dpy, T->win);
+    redraw_window(grp, T, 0);
     XSelectInput(grp->dpy, T->win, EVENTMASKS);
   }
 }
