@@ -12,7 +12,7 @@ test:
 	./x11launch 'click|cmdclick' -v 'immediate||cmdimmed' -b 5 'SEP' -p blue -i khaki '||immed no label' -g 1x0-0+0 'next is pipline separator|just command' '|' 'that WAS pipleine||another imediate' -dD || :
 
 testrun: x11launch
-	./x11launch 'Date|date'
+	./x11launch -g 1x0+100+10 'Date|date' -g 1x0-200-20 'Cal|cal' -d
 
 clean:
 	rm -f $(JUNK) $(GENERATED)

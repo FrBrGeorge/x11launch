@@ -123,7 +123,7 @@ void
 new_tab(struct arguments *args, char *labelcmd) {
       struct tab *T = args->grp->tabs + args->grp->ntabs;
       char *sep;
-      unsigned int res, w, h;
+      unsigned int res, w=0, h=0;
 
       args->grp->ntabs++;
       /* parse label, cmd and immediate; TODO deal with \| */
@@ -234,10 +234,17 @@ GC new_gc(struct tabgroups *grp, Font fid, unsigned long paper, unsigned long in
 
 Window new_window(struct tabgroups *grp, struct tab *T) {
   XSetWindowAttributes attrib;
-  Window win;
+  Window win, rootwin;
+  int rx=0, ry=0;
+  unsigned int rw=0, rh=0, rbw=0, rdepth=0;
 
   attrib.override_redirect = True;
   attrib.background_pixel = T->paper->pixel;
+
+  if(!XGetGeometry(grp->dpy, grp->root, &rootwin, &rx, &ry, &rw, &rh, &rbw, &rdepth))
+    error(EINVAL, EINVAL, "Cannot obtain root window geometry");
+  if(T->x < 0) T->x += rw - T->w;
+  if(T->y < 0) T->y += rh - T->h;
   if(!(win = XCreateWindow(grp->dpy, grp->root, T->x, T->y, T->w, T->h, T->b,
 	  CopyFromParent, InputOutput, CopyFromParent,
 	  CWOverrideRedirect | CWBackPixel, &attrib)))
@@ -291,8 +298,10 @@ main (int argc, char **argv)
   /* Parse our arguments; every option seen by parse_opt will
      be reflected in arguments. */
   argp_parse (&argp, argc, argv, ARGP_IN_ORDER, 0, &arguments);
-  if(arguments.dump) dump_arguments(&arguments);
-  if(arguments.dry_run) exit(0);
+  if(arguments.dry_run) {
+    if(arguments.dump) dump_arguments(&arguments);
+    exit(0);
+  }
 
   if(!(groups.dpy = XOpenDisplay(NULL)))
     error(ECONNREFUSED, ECONNREFUSED, "Cannot connect to X server");
@@ -301,6 +310,7 @@ main (int argc, char **argv)
   groups.root = RootWindow(groups.dpy, groups.screen);
 
   create_windows(&groups);
+  if(arguments.dump) dump_arguments(&arguments);
   
   /* TODO separate function */
   XEvent event;
